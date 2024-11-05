@@ -20,6 +20,7 @@ These resources are designed to assist security professionals in monitoring and 
 
 - **`WindowEventCode.txt`**: Contains key Windows Event Codes and their meanings.
 - **`CS+Threat+Hunting+Searches.pdf`**: Provides search queries for detecting suspicious activities using Splunk SPL and CrowdStrike CQL.
+- [KC7 Phishing Attack Case Study](KC7/PhishingAttckCaseStudy.docx)
 
 ## How to Use
 
