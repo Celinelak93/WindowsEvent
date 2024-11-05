@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My GitHub Pages</title>
+</head>
+<body>
+    <h1>Welcome to My GitHub Pages</h1>
+    <p>This is the main landing page of my site.</p>
+
+    <h2>Downloads</h2>
+    <ul>
+        <li><a href="WindowEventCode.txt">Window Event Codes</a></li>
+        <li><a href="CS+Threat+Hunting+Searches.pdf">CS Threat Hunting Searches</a></li>
+    </ul>
+</body>
+</html>
