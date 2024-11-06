@@ -1,0 +1,45 @@
+1. Detect unusual processes or suspicious activity:
+  Get-Process | Where-Object { $_.CPU -gt 100 }
+
+2. Detect unexpected open ports that may indicate a potential threat:
+  Get-NetTCPConnection | Where-Object { $_.State -eq "Listen" }
+
+3. Monitor for specific security events, such as failed login attempts:
+  Get-EventLog -LogName Security -EntryType FailureAudit | Select-Object TimeGenerated, EntryType, Message
+
+4. Spot active connections to unusual or untrusted IP addresses:
+  Get-NetTCPConnection | Select-Object LocalAddress, RemoteAddress, State
+
+5. Identify newly created files that could indicate malware:
+  Get-ChildItem -Path C:\ -Recurse | Where-Object { $_.CreationTime -gt (Get-Date).AddHours(-24) }
+
+6. Compare file hashes against a list of known malicious signatures:
+  Get-FileHash -Path "C:\Path\To\File.exe" | Where-Object { $_.Hash -eq "KnownMaliciousHash" }
+
+7. Spot unauthorized scheduled tasks that could indicate persistence mechanisms:
+  Get-ScheduledTask | Where-Object { $_.TaskPath -like "\*" }
+
+8. Detect programs set to run at startup that could be malicious:
+  Get-ItemProperty -Path 'HKLM:\Software\Microsoft\Windows\CurrentVersion\Run'
+
+9. Look for error events that may indicate security-related issues:
+  Get-EventLog -LogName System -EntryType Error | Select-Object TimeGenerated, Message
+
+10. Detect newly created or unexpected user accounts on the system:
+  Get-LocalUser | Where-Object { $_.LastLogon -gt (Get-Date).AddDays(-1) }
+
+11. Detect suspicious PowerShell command execution, particularly in sensitive environments:
+  Get-EventLog -LogName 'Microsoft-Windows-PowerShell/Operational' -After (Get-Date).AddHours(-1) | Select-Object TimeCreated, Message
+
+12. Check for detections recorded by Windows Defender:
+  Get-MpThreatDetection | Select-Object ThreatName, Action, Resources
+
+13. Monitor for suspicious querying of AD objects or permissions:
+  Get-ADUser -Filter * -Property LastLogonDate
+
+14. Find processes that are actively making network connections:
+  Get-NetTCPConnection | ForEach-Object { Get-Process -Id $_.OwningProcess } | Select-Object ProcessName, Id
+
+15. Detect unauthorized software that might have been installed:
+  Get-WmiObject -Class Win32_Product | Select-Object Name, Version, InstallDate
+
