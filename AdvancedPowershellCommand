@@ -1,1 +1,78 @@
+1. Get-Process with Network Connections
+Check running processes with active network connections to identify unusual external communications.
+  Get-Process | Where-Object { $_.MainWindowTitle -eq "" } | ForEach-Object {
+    $_ | Select-Object -Property ProcessName, Id, @{Name="IPConnections"; Expression={
+        $conns = Get-NetTCPConnection -OwningProcess $_.Id -ErrorAction SilentlyContinue
+        if ($conns) { $conns | Select-Object -ExpandProperty RemoteAddress } else { "No Connections" }
+    }}
+  }
+
+2. Detect Suspicious Scheduled Tasks
+Check for suspicious or hidden scheduled tasks, which are common persistence methods used by attackers.
+  Get-ScheduledTask | Where-Object { $_.TaskPath -like "*Microsoft\Windows\*" -and $_.State -eq "Ready" } | ForEach-Object {
+    [pscustomobject]@{
+        TaskName = $_.TaskName
+        TaskPath = $_.TaskPath
+        LastRunTime = $_.LastRunTime
+        NextRunTime = $_.NextRunTime
+    }
+  } | Sort-Object LastRunTime -Descending | Format-Table -AutoSize
+
+3. List Recently Created User Accounts
+New user accounts, especially those with elevated privileges, can be a sign of compromise.
+  Get-LocalUser | Where-Object { $_.LastPasswordChange -gt (Get-Date).AddDays(-7) } | Select-Object Name, Enabled, LastPasswordChange
+
+4. Identify Suspicious Running Services
+Detect suspicious services by searching for those with unusual paths or names.
+  Get-Service | Where-Object { $_.StartType -eq "Automatic" -and $_.Status -eq "Running" } | ForEach-Object {
+    [pscustomobject]@{
+        ServiceName = $_.Name
+        DisplayName = $_.DisplayName
+        Path = (Get-WmiObject -Class Win32_Service -Filter "Name='$($_.Name)'").PathName
+    }
+  } | Where-Object { $_.Path -notlike "*System32*" -and $_.Path -notlike "*Program Files*" } | Format-Table -AutoSize
+
+5. Check Recent PowerShell Scripts in Event Logs
+Look for recent PowerShell activity logged in the Event Viewer (Event ID 4104 logs PowerShell script block executions).
+  Get-WinEvent -FilterHashtable @{LogName='Microsoft-Windows-PowerShell/Operational'; Id=4104; StartTime=(Get-Date).AddDays(-7)} | 
+Select-Object -Property Id, TimeCreated, @{Name="Script"; Expression={$_.Properties[1].Value}} | Format-Table -AutoSize
+
+6. Scan for Malware Artifacts in Startup Locations
+Check common startup locations in the registry for malware artifacts.
+$StartupKeys = @(
+    "HKLM:\Software\Microsoft\Windows\CurrentVersion\Run",
+    "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run"
+)
+foreach ($key in $StartupKeys) {
+    Get-ItemProperty -Path $key | ForEach-Object {
+        [pscustomobject]@{
+            Key = $key
+            Name = $_.PSChildName
+            Path = $_.Path
+        }
+    } | Format-Table -AutoSize
+  }
+
+7. List Active Network Connections with Process Information
+Identify active network connections and associated processes to detect potential Command and Control (C2) communications.
+  Get-NetTCPConnection | Where-Object { $_.State -eq "Established" -and $_.RemoteAddress -ne "127.0.0.1" } | ForEach-Object {
+    $proc = Get-Process -Id $_.OwningProcess -ErrorAction SilentlyContinue
+    [pscustomobject]@{
+        ProcessName = $proc.ProcessName
+        PID = $_.OwningProcess
+        LocalAddress = $_.LocalAddress
+        LocalPort = $_.LocalPort
+        RemoteAddress = $_.RemoteAddress
+        RemotePort = $_.RemotePort
+        State = $_.State
+      }  
+  } | Format-Table -AutoSize
+
+
+8. List Recently Accessed Files
+Identify recently accessed files, particularly in temporary or user directories where malware may reside.
+  Get-ChildItem -Path "C:\Users\*\AppData\Local\Temp" -Recurse | 
+  Where-Object { $_.LastAccessTime -gt (Get-Date).AddDays(-1) } | 
+  Select-Object FullName, LastAccessTime | Format-Table -AutoSize
+
 
