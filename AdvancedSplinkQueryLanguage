@@ -1,0 +1,51 @@
+`1. A subsearch is a query within a query. The results of the inner query (subsearch) are fed into the outer query. Subsearches are helpful when you need to use results from one search as input for another.
+    index=web_logs [search index=error_logs | fields user_id]
+    This query finds web logs where user_id matches any user found in the error_logs index.
+
+2. The join command allows you to combine two datasets on a common field, similar to SQL. This is useful when you need to combine data from multiple sources.
+    index=network_logs | join type=inner user_id [search index=app_logs | fields user_id, app_activity]
+    This combines network_logs and app_logs based on user_id.
+
+3. The transaction command groups related events based on a common field (like user_id or session_id) and calculates session-based metrics.
+    index=web_logs | transaction session_id maxpause=30s
+    This groups all events with the same session_id into one transaction, with a maximum pause of 30 seconds between events.
+
+4. Use timechart with statistical functions to view metrics over time. You can create advanced time-based visualizations with multiple aggregations.
+    index=web_logs | timechart avg(response_time) by status_code
+    This shows the average response time over time for each HTTP status code.
+
+5. eval allows for custom field calculations. You can use conditional logic (like if, case, and coalesce) to create custom fields or transform data.
+    index=web_logs | eval response_status=if(status_code=200, "Success", "Failure")
+    This creates a response_status field based on the status_code.
+
+6. The lookup and inputlookup commands let you enrich data with information from static files (like CSVs). This is useful for adding context, like user attributes, IP addresses, or reference data.
+    index=access_logs | lookup geo_location ip AS client_ip OUTPUT city country
+    This query enriches each client_ip with city and country information from a lookup file.
+
+7. stats is a versatile command used for aggregation and calculation. You can use functions like count, avg, sum, min, max, and more advanced statistical functions like stdev (standard deviation), median, and p50.
+    index=web_logs | stats count by status_code | where count > 100
+    This counts occurrences of each status_code and filters out codes with fewer than 100 occurrences.
+
+8. The rex command allows you to extract fields from unstructured data using regular expressions, which is especially useful for parsing logs.
+    index=web_logs | rex field=_raw "user_id=(?<user_id>\d+)"
+    This extracts user_id from raw log data.
+
+9. The where command enables complex filtering based on expressions, such as comparing fields or applying mathematical functions.
+    index=network_logs | stats avg(latency) as avg_latency by server | where avg_latency > 100
+    This filters servers with an average latency over 100ms.
+
+10. The xyseries command can convert data to a matrix format, which is useful for certain visualizations.
+    index=web_logs | chart count by status_code, date | xyseries date, status_code, count
+    This creates a matrix of status codes over dates, useful for heatmaps.
+
+Putting It All Together
+Here’s a comprehensive example combining several techniques:
+index=web_logs
+| join session_id [search index=user_logs | stats count by session_id]
+| transaction session_id maxpause=30s
+| eval response_category=case(status_code=200, "Success", status_code=404, "Not Found", status_code=500, "Error", 1=1, "Other")
+| stats count avg(response_time) by response_category
+| where avg(response_time) > 200
+This query joins data from user_logs to web_logs, groups events by session, categorizes responses, and filters for high response times.
+
+These techniques allow for powerful and flexible data analysis in Splunk, making it possible to identify insights and anomalies in complex datasets.
